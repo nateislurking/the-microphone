@@ -95,13 +95,17 @@ node server.js
 You should see:
 
 ```
+  the desk            : born (cwd /home/you/projects/my-project)
 THE MICROPHONE is up  ->  http://127.0.0.1:8080
   workspace root      : /home/you/projects/my-project
   config              : /home/you/projects/my-project/the-microphone/mic.config.json
   claude binary       : /home/you/.local/bin/claude
   threads             : /home/you/projects/my-project/the-microphone/threads
-  the desk            : born (cwd /home/you/projects/my-project)
+  foreman helpers     : 0 baselined  (none found)
 ```
+
+(The Desk line comes first because it's born before the server starts listening. `0 baselined` is
+correct on a fresh install — the Foreman door is off, so there are no helpers yet.)
 
 If `claude binary` says **NOT FOUND**, set `claudeBin` in your config to the full path — that's the
 one failure that will otherwise look like everything working until the first turn dies.
