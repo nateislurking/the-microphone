@@ -117,6 +117,13 @@ At one or two closes a day you would catch this by hand. At fifteen you would no
 get buried by a folder rename. `[CLOSE-LINE:FORCE]` is the deliberate escape, and it logs that it
 discarded things, on purpose: throwing work away should be a decision someone made.
 
+**The fold.** No line commits anything — that's a charter rule, and it exists so two lines working
+the same tree can't clobber each other. Which means somebody has to do the committing, or work
+piles up uncommitted forever. When a line closes, the server drops a row in the Foreman's in-tray,
+and that tray is injected into the Foreman's next turn. No turn is spawned by a close (at fifteen
+closes a day that would be pure noise) — the work just waits somewhere visible until you say "fold
+the shop." The Cockpit reads the same tray for its awaiting-fold count.
+
 **The day boundary.** Nothing resets on a clock. A timer at midnight cuts off whoever works late,
 and a card raised while you sleep is a card you already blew past. The check runs on your first
 turn of a sitting — the only moment you can answer it — and it asks; it never acts.
