@@ -175,6 +175,14 @@ overwritten on the next turn, by design, so a charter change reaches every line 
 
 Start with `LINE-CHARTER.md`. It's the one every line gets.
 
+**Run `node check.js` before you commit.** It checks the pairs of things that must agree and
+have nothing enforcing it: every charter section the code points agents at actually exists, every
+doc cross-reference resolves, every config key is both read and documented, and nothing private
+crept in. It exists because of a real failure — `server.js` tells the Foreman to "follow THE FOLD
+in your charter," that section got deleted during a packaging pass, and *nothing broke.* The server
+went on confidently pointing an agent at instructions that were not there. Exits non-zero, so it
+sits fine in a pre-commit hook.
+
 **The Cockpit tab** renders plain markdown files you already keep — a decision list, a backlog, a
 one-line "what I'm working on." Optional, read-only, and documented in
 [`docs/COCKPIT.md`](docs/COCKPIT.md). Leave it unconfigured and it stays out of the way.
@@ -198,6 +206,7 @@ present, it does not make a line trustworthy. Never put something irreversible b
 | [`examples/`](examples/) | The elevated-helper pattern, and one harmless working helper. |
 | `charters/` | What your agents are told about how to work. Change these. |
 | `server.js` | The whole thing. Long, but linear, and the comments explain *why*. |
+| `check.js` | The consistency checker. Run it before you commit. |
 
 ---
 
