@@ -357,7 +357,15 @@
     var bits = [];
     if (turn.ts) bits.push(fmtTime(turn.ts));
     if (turn.model) bits.push(shortModel(turn.model));
-    if (turn.cost) bits.push("$" + Number(turn.cost).toFixed(4));
+    /* NO PER-TURN COST IN THE UI (ruled 2026-08-02, decision 168c). The figure was here from
+       day one, rendered in the faintest type at the far right of the header -- and in months of
+       daily use it was never once read, let alone acted on. What finally settled it: a screenshot
+       of this interface is public copy, and a compute dollar figure on a public surface invites a
+       question the page then has to answer. It also appeared on only some turns, so it never even
+       read as a consistent column.
+       THE DATA IS NOT DELETED: server.js still writes `cost:` into every turn's frontmatter, so
+       a month is still totalable with grep. Engineering truth keeps the number; the surface never
+       quotes it. Do not re-add this line without deciding that again. */
     meta.textContent = bits.join("  ·  ");
     tag.appendChild(meta);
     div.appendChild(tag);
