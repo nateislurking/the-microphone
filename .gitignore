@@ -1,0 +1,28 @@
+# ============================================================================
+#  The Microphone -- what never goes in git
+# ============================================================================
+
+# YOUR CONVERSATIONS. Every line's turns, its sandbox, its archives. This is the
+# single most important line in this file: threads/ is the whole content of every
+# conversation you have ever had with a line, and it is created at runtime, not
+# shipped. The server recreates it on first boot.
+threads/
+
+# YOUR CONFIG. It names paths on your machine and, if you enabled the Foreman,
+# which credential files it reads. Commit mic.config.example.json instead.
+mic.config.json
+
+# Your own elevated helpers. The pattern lives in examples/; what you actually
+# wire up points at your accounts and is yours, not the package's.
+helpers/
+
+# Runtime state and logs -- churn, no evidence value.
+day-state.json
+foreman-notes.json
+*.log
+
+# The armed-turn audit trail. Append-only and worth keeping locally; not public.
+FOREMAN-LEDGER.md
+
+node_modules/
+.DS_Store

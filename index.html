@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Microphone</title>
+<meta name="theme-color" content="#00471B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/mic-icon.svg">
+<link rel="apple-touch-icon" href="assets/mic-icon.svg">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="mic.css?v=20260802a">
+</head>
+<body>
+  <div class="app">
+    <div class="chrome"></div>
+
+    <!-- ============ THE TAB ROW ============ -->
+    <nav class="tabbar" id="tabbar" aria-label="Lines / Microphone / Cockpit">
+      <!-- LINES: phone-only (the strip is always on screen at desk width, so this would be noise
+           there). On a phone the strip lives at the top of the mic pane, which meant the ONLY way
+           to switch lines was to be scrolled to the top -- and once scroll-restore started landing
+           you mid-page, your other lines became unreachable. This is that door. -->
+      <button class="tab tab-lines" id="tab-lines" aria-haspopup="true" aria-expanded="false"
+              aria-controls="linesmenu">Lines<span class="tabdot" id="linesdot"></span></button>
+      <button class="tab active" id="tab-mic" data-pane="mic" aria-selected="true">Microphone<span class="tabdot" id="micdot"></span></button>
+      <button class="tab" id="tab-cockpit" data-pane="cockpit" aria-selected="false">Cockpit</button>
+      <div class="linesmenu" id="linesmenu" role="menu" aria-labelledby="tab-lines" hidden></div>
+    </nav>
+
+    <div class="panes">
+
+      <!-- ============ PANE 1 : THE MICROPHONE ============ -->
+      <div class="pane pane-mic" id="pane-mic">
+        <div class="deck">
+
+          <!-- ============ THE THREAD STRIP ============ -->
+          <aside class="strip">
+            <div class="strip-head">
+              <div class="strip-brand">The Microphone</div>
+              <div class="strip-sub">talk into it, run the shop</div>
+            </div>
+            <div class="chips" id="chips"></div>
+            <div class="strip-foot">
+              <button class="newbtn" id="newbtn">+ open a line</button>
+            </div>
+            <!-- The manual door (see the code comment in mic.js): normally you ask the
+                 Desk to open a line; this form does it without the Desk. -->
+            <form class="newform hidden" id="newform" autocomplete="off">
+              <label for="nf-title">Line</label>
+              <input id="nf-title" name="title" placeholder="e.g. correspondence" required>
+              <label for="nf-cwd">Where it works</label>
+              <!-- The workspace root is the right answer almost every time: a line rooted anywhere
+                   else boots without the context your workspace's own CLAUDE.md gives it. A line
+                   can still read and write any path regardless, so it rarely needs its own root.
+                   Any shortcuts you list under "folders" in mic.config.json are appended here at
+                   load; with none configured this stays a single sensible option. -->
+              <select id="nf-cwd" name="cwd">
+                <option value="" selected>The workspace root &mdash; default</option>
+              </select>
+              <label for="nf-model">Model</label>
+              <select id="nf-model" name="model">
+                <!-- Leave the first option's value EMPTY so the server's own default applies.
+                     This dropdown used to name a model explicitly, which silently overrode
+                     DEFAULT_MODEL -- a server-side fix then did nothing for lines opened here.
+                     ⚠ PIN SITE: on a model-generation change update these options, the second
+                     <select> below, and models in mic.config.json. -->
+                <option value="" selected>Default &mdash; whatever the server is set to</option>
+                <option value="claude-opus-5">Opus &mdash; deep work</option>
+                <option value="claude-sonnet-5">Sonnet &mdash; solid middle</option>
+                <option value="claude-haiku-4-5">Haiku &mdash; cheap &amp; fast</option>
+              </select>
+              <div class="row">
+                <button type="submit" class="go">Open</button>
+                <button type="button" class="cancel" id="nf-cancel">Cancel</button>
+              </div>
+              <p class="scaff">The manual path &mdash; normally you just ask the Desk to open a line.</p>
+            </form>
+          </aside>
+
+          <!-- ============ THE DESK ============ -->
+          <section class="desk">
+            <div class="desk-head" id="desk-head" style="display:none">
+              <span class="desk-title" id="desk-title"></span>
+              <select class="desk-model" id="desk-model" title="This line's brain &mdash; a switch takes effect on the next turn">
+                <option value="claude-haiku-4-5">haiku-4-5</option>
+                <option value="claude-sonnet-5">sonnet-5</option>
+                <option value="claude-opus-5">opus</option>
+              </select>
+              <span class="desk-cwd" id="desk-cwd"></span>
+            </div>
+
+            <div class="stream" id="stream">
+              <div class="empty" id="empty">
+                <div>
+                  <div class="mark">&#9673;</div>
+                  <h2>The Microphone</h2>
+                  <p>You key the Microphone, it reaches the Desk, and the Desk opens lines to every
+                  department. Pick a line on the left &mdash; the Desk is always staffed.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============ THE REPLY DOCK ============ -->
+            <div class="dock" id="dock" style="display:none">
+              <div class="dock-inner">
+                <div class="working" id="working">
+                  <span class="spin"></span>
+                  <span id="working-txt">working&hellip;</span>
+                  <button class="stop" id="stopbtn">Stop</button>
+                </div>
+                <div class="pastes" id="pastes"></div>
+                <div class="replywrap">
+                  <!-- THE PAPERCLIP (2026-08-02). Pasting works on the desk; a phone has no paste
+                       path for a photo it just took, so the whole image lane was desk-only. This
+                       button is a file picker wired into the EXISTING paste pipeline -- same
+                       /api/paste, same pending chips, same send. accept="image/*" is what makes
+                       a phone offer Camera / Photo Library; capture is deliberately NOT set, so
+                       the library stays an option. The input is visually hidden, not display:none
+                       inside a hidden ancestor, so the click always reaches it. -->
+                  <input type="file" id="clipinput" class="clip-input"
+                         accept="image/png,image/jpeg,image/gif,image/webp,image/*" multiple>
+                  <button class="clip" id="clipbtn" type="button"
+                          title="Attach an image" aria-label="Attach an image">&#128206;</button>
+                  <textarea class="replybox" id="replybox" rows="1"
+                    placeholder="Reply on this line&hellip;  (Ctrl+Enter sends &middot; &#128206; or paste to attach)"></textarea>
+                  <button class="send" id="sendbtn">Send</button>
+                </div>
+                <p class="dock-hint">Ctrl+Enter sends &middot; &#128206; or paste to attach an image</p>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- ============ PANE 2 : THE COCKPIT ============ -->
+      <!-- 2026-07-25: was src="http://localhost:8000/cockpit/index.html" -- a HARDCODED HOST, which
+           meant that on a PHONE "localhost" resolved to the PHONE and this tab could never load.
+           The Cockpit is the tab that shows you the shop, and the phone is how you run it, so that was
+           a silent break in exactly the surface you depend on. Now a RELATIVE path:
+           served by the Mic itself, same origin as /api/threads, no host named anywhere, works
+           identically on the desk and the phone, and one service to keep alive on the box instead
+           of two. The Cockpit is simply a view into all the Mic's lines. -->
+      <div class="pane pane-cockpit" id="pane-cockpit" hidden>
+        <iframe class="cockpit-frame" id="cockpit-frame" title="Cockpit"
+                src="cockpit.html"></iframe>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="assets/md.js?v=20260801a"></script>
+  <!-- ?v= is the belt to the server's no-store braces: it changes the URL, so a browser that
+       already cached the old file (as the phone PWA did on 2026-07-22) cannot serve it. Bump this
+       stamp whenever a shell file changes and you need certainty it landed. -->
+  <script src="mic.js?v=20260802a"></script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The House Reader</title>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<style>
+/* The House Reader theme (green-on-cream), tokens per the walkthrough reader. */
+:root{
+  --bg:#EEE1C6; --panel:#FFFFFF; --ink:#1A1F18; --muted:#535B4C;
+  --green:#00471B; --green-deep:#00310F; --olive:#5C5A30; --bone:#F4EAD0;
+  --bone-hi:#FBF4E2; --tint:#9CC6A4; --link:#0077C0; --rust:#C05828; --line:#DAD0B6;
+  --disp:'Barlow Condensed','Oswald','Arial Narrow',system-ui,sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  --h1:clamp(2.1rem,4.4vw,3rem); --h2:clamp(1.55rem,3vw,2.05rem);
+  --h3:clamp(1.25rem,2.1vw,1.45rem); --measure:42rem; --padx:clamp(20px,5vw,44px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+  font-size:1.08rem;line-height:1.62;overflow-x:hidden}
+.band{position:sticky;top:0;z-index:5;height:6px;background:var(--green)}
+/* The way back. Without this the reader is a dead end: opening a file replaces the Mic
+   and the only escape is closing the tab, which loses the line you were reading. */
+.backbar{position:sticky;top:6px;z-index:6;display:flex;gap:1.1rem;align-items:center;
+  background:var(--bone-hi);border-bottom:1px solid var(--line);
+  padding:.62rem clamp(20px,5vw,44px);font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.11em;font-size:.79rem}
+.backbar a{color:var(--green);text-decoration:none;border:0;cursor:pointer}
+.backbar a:hover{color:var(--rust)}
+.backbar .home{margin-left:auto;color:var(--olive)}
+.wrap{max-width:var(--measure);margin:0 auto;padding:clamp(28px,6vw,56px) var(--padx) clamp(64px,10vw,110px)}
+.masthead{margin-bottom:2.2rem}
+.eyebrow{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.14em;
+  font-size:.82rem;color:var(--olive);margin:0}
+.eyebrow::before{content:"";display:inline-block;width:1.4rem;height:2px;background:var(--green);
+  vertical-align:middle;margin-right:.5rem;transform:translateY(-2px)}
+.doc>*:first-child{margin-top:0}
+.doc h1,.doc h2,.doc h3,.doc h4,.doc h5,.doc h6{font-family:var(--disp);font-weight:700;
+  line-height:1.14;color:var(--green);letter-spacing:.004em;margin:2.2rem 0 .7rem}
+.doc h1{font-size:var(--h1);margin-top:0;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+.doc h2{font-size:var(--h2)} .doc h3{font-size:var(--h3)}
+.doc h4,.doc h5,.doc h6{font-size:1.08rem;color:var(--green-deep)}
+.doc p{margin:0 0 1.15rem} .doc strong{font-weight:700;color:var(--green-deep)} .doc em{font-style:italic}
+.doc a{color:var(--link);text-decoration:none;border-bottom:1px solid rgba(0,119,192,.35)}
+.doc a:hover{border-bottom-color:var(--link)}
+.doc a.fileref{color:var(--rust);border-bottom:1px dotted rgba(192,88,40,.5);font-family:var(--mono);font-size:.9em;word-break:break-all}
+.doc ul,.doc ol{margin:0 0 1.15rem;padding-left:1.5rem} .doc li{margin:.28rem 0}
+.doc ul{list-style:none} .doc ul>li{position:relative}
+.doc ul>li::before{content:"";position:absolute;left:-1.05rem;top:.66em;width:6px;height:6px;background:var(--green);border-radius:50%}
+.doc ol{list-style:decimal} .doc ol>li::marker{color:var(--olive);font-family:var(--mono)}
+.doc blockquote{margin:1.15rem 0;padding:.3rem 0 .3rem 1.2rem;border-left:3px solid var(--olive);color:var(--muted);font-style:italic}
+.doc hr{border:0;height:1px;background:var(--line);margin:2.2rem 0}
+.doc code{font-family:var(--mono);font-size:.88em;background:var(--bone);border:1px solid var(--line);border-radius:4px;padding:.06em .36em}
+.doc pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:.95rem 1.1rem;overflow-x:auto;margin:1.15rem 0}
+.doc pre code{background:none;border:0;padding:0;font-size:.86rem;line-height:1.55;color:var(--green-deep)}
+.doc img{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;margin:1.15rem 0}
+.doc table{width:100%;border-collapse:collapse;margin:1.15rem 0;font-size:.96rem}
+.doc th,.doc td{text-align:left;padding:.5rem .7rem;border:1px solid var(--line);vertical-align:top}
+.doc th{background:var(--bone);font-family:var(--disp);font-weight:700;color:var(--green-deep)}
+.doc tbody tr:nth-child(even){background:var(--bone-hi)}
+.doc pre.plain{white-space:pre-wrap;word-break:break-word}
+.state{max-width:var(--measure);margin:0 auto;padding:clamp(60px,12vw,140px) var(--padx);text-align:center}
+.state h1{font-family:var(--disp);font-weight:700;color:var(--green);font-size:var(--h2);margin:0 0 .6rem}
+.state p{color:var(--muted);margin:.3rem 0}
+.state code{font-family:var(--mono);font-size:.9em;background:var(--bone);border:1px solid var(--line);border-radius:4px;padding:.1em .4em}
+.state .mark{font-family:var(--disp);color:var(--tint);font-size:3rem;line-height:1;margin-bottom:.6rem}
+@media(max-width:520px){body{font-size:1.02rem}}
+</style>
+</head>
+<body>
+<div class="band"></div>
+<nav class="backbar">
+  <a id="backlink" href="/">&larr; Back to the line</a>
+  <a class="home" href="/">The Microphone</a>
+</nav>
+<main id="app"><div class="state"><p>Reading&hellip;</p></div></main>
+<script>
+/* Prefer real history (returns to the exact line, scroll position intact); fall back to the
+   Mic root when the reader was opened directly, e.g. in a fresh tab. */
+document.getElementById("backlink").addEventListener("click", function (e) {
+  if (window.history.length > 1 && document.referrer) { e.preventDefault(); window.history.back(); }
+});
+</script>
+
+<script src="/assets/md.js?v=20260801a"></script>
+<script>
+(function () {
+  "use strict";
+  var app = document.getElementById("app");
+  var params = new URLSearchParams(window.location.search);
+  var docPath = params.get("path");
+
+  function showError(detail) {
+    app.innerHTML = '<div class="state"><div class="mark">&#9634;</div>' +
+      "<h1>This door won&rsquo;t open</h1>" +
+      "<p>The reader couldn&rsquo;t load " + (docPath ? "<code>" + Glass.escapeHtml(docPath) + "</code>" : "the document") + ".</p>" +
+      (detail ? "<p>" + Glass.escapeHtml(detail) + "</p>" : "") + "</div>";
+    document.title = "The House Reader";
+  }
+  if (!docPath) { showError("No ?path given."); return; }
+
+  var isMd = /\.(md|markdown|mdown)$/i.test(docPath);
+  var base = docPath.split(/[\\/]/).pop();
+
+  fetch("/file?path=" + encodeURIComponent(docPath) + "&raw=1")
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+    .then(function (text) {
+      var inner;
+      if (isMd) {
+        inner = '<div class="doc">' + Glass.md(text) + "</div>";
+      } else {
+        inner = '<div class="doc"><pre class="plain"><code>' + Glass.escapeHtml(text) + "</code></pre></div>";
+      }
+      app.innerHTML = '<article class="wrap"><header class="masthead"><p class="eyebrow">' +
+        Glass.escapeHtml(base) + "</p></header>" + inner + "</article>";
+      var doc = app.querySelector(".doc");
+      if (doc) Glass.linkify(doc);
+      var title = isMd ? Glass.firstH1(text) : base;
+      document.title = (title || base) + " · The House Reader";
+      window.scrollTo(0, 0);
+    })
+    .catch(function (err) { showError(err && err.message); });
+})();
+</script>
+</body>
+</html>

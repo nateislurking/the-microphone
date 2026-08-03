@@ -1,0 +1,390 @@
+/* ============================================================================
+   THE GLASS -- house style (The Workshop Plate: warm-ground mid-century).
+   Palette + furniture lifted from the shop room pages
+   (shop-visual-map/walkthrough/system-toneburst/service-manager.html) so the
+   the Mic reads as the cockpit's talking sibling. Local woff2s only -- no system
+   fallback (that renders as Arial and fails review).
+   ========================================================================== */
+:root{
+  --bg:#EEE1C6;
+  --panel:#F4EAD0;
+  --panel-hi:#FBF4E2;
+  --panel-lo:#E8DBBC;
+  --card:#FFFFFF;
+  --ink:#1A1F18;
+  --engrave:#33361F;
+  --muted:#535B4C;
+  --muted-hi:#6E7566;
+  --olive:#5C5A30;
+  --green:#00471B;
+  --green-d:#00310F;
+  --lamp-lit:#5CA06B;
+  --amber:#C79A3C;
+  --metal:#868B7E;
+  --metal-d:#4A4E44;
+  --bezel:#2A2E25;
+  --rust:#C05828;
+  --blue:#0A5C96;
+  --link:#0077C0;
+  --line:#DAD0B6;
+  --bone:#F4EAD0;
+  --disp:'Barlow Condensed','Oswald','Arial Narrow',system-ui,sans-serif;
+  --body:'Barlow','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  height:100vh;overflow:hidden;
+}
+.engrave{font-family:var(--disp);font-weight:600;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--engrave);text-shadow:0 1px 0 rgba(255,255,255,.6)}
+
+/* the top green chrome band */
+.chrome{height:8px;background:var(--green);flex:0 0 auto}
+
+/* ================= THE TAB ROW : Microphone | Cockpit ================= */
+.tabbar{flex:0 0 auto;display:flex;gap:2px;background:var(--panel-lo);
+  border-bottom:2px solid var(--ink);padding:0 10px;box-shadow:inset 0 -1px 0 var(--panel-hi);
+  position:relative}   /* containing block for the Lines dropdown */
+
+/* ---- THE LINES TAB + DROPDOWN (phone only) ----------------------------------
+   Hidden at desk width on purpose: the strip is permanently on screen there, so a
+   second way in would be clutter. See the comment in index.html for why it exists. */
+/* `.tabbar .tab-lines` (0,2,0) on purpose, NOT a bare `.tab-lines` (0,1,0): `.tab` sets
+   display:inline-flex and sits LATER in this file, so an equal-specificity hide rule loses to it
+   and the phone-only tab appears at desk width. Caught by desk-width.test.mjs on 2026-07-22. */
+.tabbar .tab-lines{display:none}
+.linesmenu{display:none}
+.linesmenu.open{display:block}
+.linesmenu{
+  position:absolute;top:100%;left:8px;right:8px;z-index:60;
+  background:var(--card);border:2px solid var(--ink);border-top:0;
+  border-radius:0 0 10px 10px;box-shadow:0 14px 28px rgba(0,0,0,.28);
+  max-height:min(62vh,460px);overflow-y:auto;padding:8px}
+.lineitem{
+  display:block;width:100%;text-align:left;cursor:pointer;position:relative;
+  background:var(--panel-hi);border:1px solid var(--line);border-radius:8px;
+  padding:11px 34px 11px 13px;margin:0 0 7px;font-family:inherit;color:var(--ink)}
+.lineitem:last-child{margin-bottom:0}
+.lineitem.active{border-color:var(--green);background:var(--card)}
+.lineitem-title{font-family:var(--disp);font-weight:600;font-size:1rem;
+  color:var(--green);line-height:1.14}
+.lineitem-meta{font-family:var(--mono);font-size:.66rem;color:var(--muted-hi);
+  margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* same vocabulary as the strip + the tab dots: rust = waiting on the operator, green = working */
+/* NOTE the modifier is `is-working`, NOT `working`. The reply dock owns a bare `.working`
+   (line ~258) whose rule is `display:none` until `.on` is added -- it sits later in this file, so
+   a `.lineitem-dot.working` span rendered with the right colour and then vanished. Cost one round
+   of "the dot isn't showing" on 2026-07-22. Keep this modifier namespaced. */
+.lineitem-dot{position:absolute;top:50%;right:12px;transform:translateY(-50%);
+  display:block;width:10px;height:10px;border-radius:50%}
+.lineitem-dot.is-working{background:var(--lamp-lit);
+  box-shadow:0 0 0 2px var(--panel-hi),0 0 8px 1px rgba(92,160,107,.6)}
+.lineitem-dot.unread{background:var(--rust);box-shadow:0 0 0 2px var(--panel-hi)}
+.lineitem-count{position:absolute;top:50%;right:10px;transform:translateY(-50%);
+  min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--rust);
+  color:#fff;font-family:var(--disp);font-weight:700;font-size:.72rem;line-height:20px;
+  text-align:center}
+/* inline-flex + align-items:center puts the status dot on the SAME optical centre line as the
+   label. The old `vertical-align:middle` on the dot aligned it to the text's x-height midpoint,
+   not the label's box centre, which read as a dot sitting slightly high next to the words. */
+.tab{cursor:pointer;font-family:var(--disp);font-weight:600;text-transform:uppercase;
+  letter-spacing:.14em;font-size:.72rem;color:var(--muted);background:transparent;
+  border:0;border-bottom:3px solid transparent;padding:11px 22px 9px;margin-bottom:-2px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:color .12s,border-color .12s}
+.tab:hover{color:var(--engrave)}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* ================= THE PANES : one visible at a time ================= */
+.panes{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.pane{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.pane[hidden]{display:none}
+.cockpit-frame{flex:1 1 auto;width:100%;height:100%;border:0;background:var(--bg)}
+
+/* ================= LAYOUT: strip (left) + desk (center) ================= */
+.app{display:flex;flex-direction:column;height:100vh}
+.deck{display:flex;flex:1 1 auto;min-height:0}
+
+/* ---- the thread strip ---- */
+.strip{
+  flex:0 0 262px;background:var(--panel);border-right:2px solid var(--ink);
+  display:flex;flex-direction:column;min-height:0;
+  box-shadow:inset -5px 0 0 var(--panel-hi);
+}
+.strip-head{padding:16px 18px 12px 20px;border-bottom:1px solid var(--line)}
+.strip-brand{font-family:var(--disp);font-weight:700;color:var(--green);
+  font-size:1.5rem;letter-spacing:.01em;line-height:1}
+.strip-sub{font-family:var(--disp);font-weight:500;text-transform:uppercase;
+  letter-spacing:.12em;font-size:.62rem;color:var(--olive);margin-top:4px}
+.chips{flex:1 1 auto;overflow-y:auto;padding:10px 12px}
+.chip{
+  display:block;width:100%;text-align:left;cursor:pointer;
+  background:var(--panel-hi);border:1px solid var(--line);border-radius:8px;
+  padding:11px 13px;margin:0 0 9px;font-family:inherit;color:var(--ink);
+  position:relative;transition:border-color .12s,background .12s;
+}
+.chip:hover{border-color:var(--metal)}
+.chip.active{border-color:var(--green);background:var(--card);
+  box-shadow:0 0 0 1px var(--green), 0 8px 20px -14px rgba(0,49,15,.6)}
+.chip-title{font-family:var(--disp);font-weight:600;font-size:1.02rem;
+  color:var(--green);line-height:1.14;padding-right:26px}
+.chip-meta{font-family:var(--mono);font-size:.66rem;color:var(--muted-hi);
+  margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{position:absolute;top:10px;right:11px;min-width:20px;height:20px;
+  padding:0 6px;border-radius:999px;background:var(--rust);color:#fff;
+  font-family:var(--disp);font-weight:700;font-size:.72rem;line-height:20px;
+  text-align:center;box-shadow:0 0 0 2px var(--panel-hi)}
+.chip.active .badge{box-shadow:0 0 0 2px var(--card)}
+.chip-run{position:absolute;top:13px;right:13px;width:9px;height:9px;border-radius:50%;
+  background:var(--lamp-lit);box-shadow:0 0 0 2px var(--panel-hi),0 0 8px 1px rgba(92,160,107,.6);
+  animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.strip-foot{padding:12px;border-top:1px solid var(--line)}
+.newbtn{width:100%;cursor:pointer;font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;color:var(--green);
+  background:var(--panel-hi);border:1px dashed var(--metal);border-radius:8px;padding:11px}
+.newbtn:hover{border-color:var(--green);background:var(--card)}
+
+/* ---- the new-thread form (scaffolding) ---- */
+.newform{padding:0 12px 12px}
+.newform.hidden{display:none}
+.newform label{display:block;font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;font-size:.6rem;color:var(--olive);
+  margin:9px 0 3px}
+.newform input,.newform select{width:100%;font-family:var(--mono);font-size:.78rem;
+  padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);
+  color:var(--ink)}
+.newform .row{display:flex;gap:7px;margin-top:11px}
+.newform .row button{flex:1;cursor:pointer;font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;font-size:.68rem;padding:8px;border-radius:6px;border:1px solid var(--ink)}
+.newform .go{background:var(--green);color:#fff;border-color:var(--green)}
+.newform .cancel{background:var(--panel-hi);color:var(--muted)}
+.newform .scaff{font-size:.64rem;color:var(--muted-hi);font-style:italic;margin-top:9px;line-height:1.4}
+
+/* ================= THE DESK (turn view) ================= */
+.desk{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0}
+.desk-head{flex:0 0 auto;padding:15px 30px 13px;border-bottom:1px solid var(--line);
+  background:var(--panel);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.desk-title{font-family:var(--disp);font-weight:700;color:var(--green);
+  font-size:1.5rem;line-height:1;letter-spacing:.005em}
+.desk-cwd{font-family:var(--mono);font-size:.7rem;color:var(--muted-hi);
+  margin-left:auto;max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desk-model{font-family:var(--disp);font-weight:600;text-transform:uppercase;
+  letter-spacing:.09em;font-size:.62rem;color:var(--olive);padding:3px 9px;
+  border:1px solid var(--line);border-radius:999px;background:var(--panel-hi);
+  appearance:none;-webkit-appearance:none;cursor:pointer}
+.desk-model:hover{border-color:var(--olive)}
+
+/* a backticked path that became a link (2026-07-19) — keep the code look, add the affordance */
+a.fileref-code{text-decoration:none}
+a.fileref-code code{color:#0A5C96;cursor:pointer;text-decoration:underline;
+  text-decoration-thickness:1px;text-underline-offset:2px}
+a.fileref-code:hover code{background:#F4EAD0}
+
+/* copy button on code blocks (2026-07-19) */
+.prewrap{position:relative}
+.prewrap pre{padding-top:36px}   /* clear the pill -- it must never sit on the first line */
+.prewrap .copybtn{position:absolute;top:7px;left:7px;font-family:var(--disp);
+  font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:.6rem;
+  color:var(--olive);background:var(--panel-hi);border:1px solid var(--line);
+  border-radius:999px;padding:3px 10px;cursor:pointer;opacity:.85}
+.prewrap .copybtn:hover{opacity:1;border-color:var(--olive)}
+
+.stream{flex:1 1 auto;overflow-y:auto;padding:clamp(18px,3vw,34px) clamp(20px,4vw,46px)}
+.stream-inner{max-width:44rem;margin:0 auto}
+
+/* a single turn */
+.turn{margin:0 0 26px}
+.turn-tag{display:flex;align-items:center;gap:9px;margin:0 0 8px}
+.turn-who{font-family:var(--disp);font-weight:600;text-transform:uppercase;
+  letter-spacing:.13em;font-size:.66rem}
+.turn.assistant .turn-who{color:var(--green)}
+.turn.user .turn-who{color:var(--olive)}
+.turn.error .turn-who{color:var(--rust)}
+.turn-meta{font-family:var(--mono);font-size:.64rem;color:var(--muted-hi);margin-left:auto}
+/* the Foreman Door: rust ARMED badge on an armed turn + a rust-ringed body */
+.armed-chip{font-family:var(--disp);font-weight:700;text-transform:uppercase;
+  letter-spacing:.11em;font-size:.57rem;color:#fff;background:var(--rust);
+  border-radius:5px;padding:2px 7px;line-height:1.35}
+.turn.armed .turn-body{border-color:var(--rust);
+  box-shadow:inset 0 0 0 1px var(--rust),0 12px 30px -26px rgba(0,49,15,.5)}
+.turn-body{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:16px 20px;box-shadow:0 12px 30px -26px rgba(0,49,15,.5)}
+.turn.user .turn-body{background:var(--panel-hi);border-style:dashed}
+.turn.error .turn-body{background:#F7E9DE;border-color:var(--rust)}
+.turn.latest .turn-body{box-shadow:0 16px 38px -26px rgba(0,49,15,.6);border-color:var(--metal)}
+
+/* markdown inside a turn (mirrors the house reader) */
+.turn-body>*:first-child{margin-top:0}
+.turn-body>*:last-child{margin-bottom:0}
+.turn-body h1,.turn-body h2,.turn-body h3,.turn-body h4{font-family:var(--disp);
+  font-weight:700;color:var(--green);line-height:1.15;margin:1.3em 0 .5em;letter-spacing:.004em}
+.turn-body h1{font-size:1.5rem;border-bottom:2px solid var(--line);padding-bottom:.3rem}
+.turn-body h2{font-size:1.28rem} .turn-body h3{font-size:1.12rem}
+.turn-body h4{font-size:1rem;color:var(--green-d)}
+.turn-body p{margin:0 0 .8em}
+.turn-body strong{font-weight:700;color:var(--green-d)}
+.turn-body em{font-style:italic}
+.turn-body a{color:var(--link);text-decoration:none;border-bottom:1px solid rgba(0,119,192,.35)}
+.turn-body a:hover{border-bottom-color:var(--link)}
+.turn-body a.fileref{color:var(--rust);border-bottom:1px dotted rgba(192,88,40,.5);
+  font-family:var(--mono);font-size:.9em;word-break:break-all}
+.turn-body a.fileref:hover{border-bottom-style:solid;border-bottom-color:var(--rust)}
+.turn-body ul,.turn-body ol{margin:0 0 .8em;padding-left:1.5rem}
+.turn-body li{margin:.25rem 0}
+.turn-body ul{list-style:none}
+.turn-body ul>li{position:relative}
+.turn-body ul>li::before{content:"";position:absolute;left:-1.05rem;top:.62em;
+  width:6px;height:6px;background:var(--green);border-radius:50%}
+.turn-body ol{list-style:decimal}
+.turn-body ol>li::marker{color:var(--olive);font-family:var(--mono)}
+.turn-body blockquote{margin:.8em 0;padding:.3em 0 .3em 1.1em;
+  border-left:3px solid var(--olive);color:var(--muted);font-style:italic}
+.turn-body code{font-family:var(--mono);font-size:.86em;background:var(--bone);
+  border:1px solid var(--line);border-radius:4px;padding:.05em .34em}
+.turn-body pre{background:#fff;border:1px solid var(--line);border-radius:8px;
+  padding:.9em 1.05em;overflow-x:auto;margin:.8em 0}
+.turn-body pre code{background:none;border:0;padding:0;font-size:.84rem;color:var(--green-d)}
+.turn-body img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);
+  display:block;margin:.7em 0}
+.turn-body table{width:100%;border-collapse:collapse;margin:.8em 0;font-size:.94rem}
+.turn-body th,.turn-body td{text-align:left;padding:.45rem .65rem;border:1px solid var(--line);vertical-align:top}
+.turn-body th{background:var(--bone);font-family:var(--disp);font-weight:700;color:var(--green-d)}
+.turn-body tbody tr:nth-child(even){background:var(--panel-hi)}
+
+.scrollhint{text-align:center;margin:0 0 20px}
+.scrollhint button{cursor:pointer;font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;font-size:.66rem;color:var(--muted);
+  background:var(--panel-hi);border:1px solid var(--line);border-radius:999px;padding:6px 16px}
+.scrollhint button:hover{border-color:var(--green);color:var(--green)}
+
+/* the empty / choose-a-thread state */
+.empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px}
+.empty .mark{font-family:var(--disp);color:var(--tint,#9CC6A4);font-size:3rem;line-height:1;margin-bottom:.4rem;color:var(--metal)}
+.empty h2{font-family:var(--disp);font-weight:700;color:var(--green);font-size:1.5rem;margin:0 0 .5rem}
+.empty p{color:var(--muted);margin:.2rem 0;max-width:34ch}
+
+/* ================= THE REPLY DOCK ================= */
+.dock{flex:0 0 auto;border-top:2px solid var(--ink);background:var(--panel);
+  padding:12px clamp(16px,3vw,34px) 14px;box-shadow:inset 0 5px 0 var(--panel-hi)}
+.dock-inner{max-width:44rem;margin:0 auto}
+.working{display:none;align-items:center;gap:11px;margin:0 0 9px;
+  font-family:var(--disp);font-weight:500;font-size:.82rem;color:var(--muted)}
+.working.on{display:flex}
+.working .spin{width:11px;height:11px;border-radius:50%;background:var(--lamp-lit);
+  box-shadow:0 0 8px 1px rgba(92,160,107,.6);animation:pulse 1.1s ease-in-out infinite}
+.working .stop{margin-left:auto;cursor:pointer;font-family:var(--disp);font-weight:600;
+  text-transform:uppercase;letter-spacing:.09em;font-size:.64rem;color:var(--rust);
+  background:transparent;border:1px solid var(--rust);border-radius:6px;padding:4px 12px}
+.working .stop:hover{background:var(--rust);color:#fff}
+
+.pastes{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 8px}
+.pastes:empty{display:none}
+.pchip{display:inline-flex;align-items:center;gap:6px;background:var(--card);
+  border:1px solid var(--line);border-radius:7px;padding:3px 4px 3px 3px}
+.pchip img{width:30px;height:30px;object-fit:cover;border-radius:4px;display:block;border:1px solid var(--line)}
+.pchip .x{cursor:pointer;font-family:var(--disp);font-weight:700;color:var(--muted-hi);
+  font-size:.9rem;padding:0 5px;background:none;border:0;line-height:1}
+.pchip .x:hover{color:var(--rust)}
+
+.replywrap{display:flex;gap:10px;align-items:flex-end}
+/* THE PAPERCLIP (2026-08-02) -- the phone's way into the paste pipeline.
+   Sized to match .send's box so the dock stays a level row; the input itself is
+   offscreen rather than display:none so the label/click path is never dead. */
+.clip-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px}
+.clip{flex:0 0 auto;cursor:pointer;font-size:1.05rem;line-height:1;
+  background:var(--card);border:1px solid var(--metal);border-radius:9px;
+  padding:12px 13px;color:var(--ink)}
+.clip:hover{border-color:var(--green);background:var(--panel-hi)}
+.clip:disabled{opacity:.45;cursor:not-allowed}
+.replybox{flex:1 1 auto;resize:none;font-family:var(--body);font-size:.98rem;
+  line-height:1.5;padding:11px 13px;border:1px solid var(--metal);border-radius:9px;
+  background:var(--card);color:var(--ink);min-height:46px;max-height:200px}
+.replybox:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,71,27,.12)}
+.replybox:disabled{background:var(--panel-lo);color:var(--muted-hi)}
+.send{flex:0 0 auto;cursor:pointer;font-family:var(--disp);font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;font-size:.82rem;color:#fff;
+  background:var(--green);border:1px solid var(--green-d);border-radius:9px;padding:12px 20px}
+.send:hover{background:var(--green-d)}
+.send:disabled{background:var(--metal);border-color:var(--metal-d);cursor:not-allowed}
+.dock-hint{font-family:var(--mono);font-size:.62rem;color:var(--muted-hi);
+  margin:7px 0 0;text-align:right}
+
+/* ================= RESPONSIVE: down to a phone column ================= */
+@media(max-width:720px){
+  body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh}
+  /* keep the tabs reachable while the page scrolls on a phone */
+  .tabbar{position:sticky;top:0;z-index:20}
+  /* three tabs now, so they get tighter: smaller type and less letter-spacing buys the room
+     without shrinking the tap targets, which stay full-height. */
+  .tab{flex:1 1 auto;text-align:center;padding:12px 6px 10px;font-size:.66rem;letter-spacing:.09em}
+  .tabbar .tab-lines{display:inline-flex}   /* must match the hide rule's specificity to beat it */
+  .tab-lines[aria-expanded="true"]{color:var(--green)}
+  .pane-cockpit{height:85vh}
+  .deck{flex-direction:column}
+  .strip{flex:0 0 auto;width:100%;border-right:0;border-bottom:2px solid var(--ink);
+    box-shadow:inset 0 -5px 0 var(--panel-hi);max-height:none}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;overflow:visible}
+  .chip{width:auto;flex:1 1 150px;margin:0}
+  .desk{min-height:60vh}
+  .desk-cwd{display:none}
+  .stream{padding:16px 16px}
+  .dock{position:sticky;bottom:0}
+}
+@media(max-width:420px){
+  .chip{flex:1 1 100%}
+  .desk-title{font-size:1.25rem}
+  .send{padding:12px 14px}
+  .clip{padding:12px 11px}
+}
+
+/* ================= THE MIC TAB'S STATUS DOT ================================
+   Visible from the Cockpit tab: rust = a line is waiting on the operator (wins);
+   green = lines working; absent = quiet. */
+/* margin-left and vertical-align are gone: the tab is now a centred inline-flex row, so the gap
+   comes from `.tab{gap}` and the vertical centring is exact rather than text-baseline-relative.
+   flex-shrink:0 keeps the dot round when the three phone tabs get tight. */
+/* `is-working`, NOT `working` -- the SECOND victim of the same collision (2026-07-22).
+   The reply dock's bare `.working` (line ~269) carries `margin:0 0 9px`. `.tabdot.working`
+   overrode display and background but NOT margin, so the green dot inherited a 9px bottom margin
+   and rode ~4-5px high in the centred flex row -- while the rust dot, which has no bare `.unread`
+   rule to collide with, sat perfectly. That asymmetry is the tell the operator spotted: "the rust buttons
+   are aligned perfectly, the green ones are still off." Margin, not alignment. */
+.tabdot{display:none;width:9px;height:9px;border-radius:50%;flex:0 0 auto;margin:0;
+  box-shadow:0 0 0 2px var(--bezel)}
+.tabdot.is-working{display:inline-block;background:var(--lamp-lit);
+  box-shadow:0 0 0 2px var(--bezel),0 0 8px 1px rgba(92,160,107,.6)}
+.tabdot.unread{display:inline-block;background:var(--rust);
+  box-shadow:0 0 0 2px var(--bezel),0 0 8px 1px rgba(192,88,44,.55)}
+
+/* ================= THE IN-APP FILE VIEWER (overlay, not a new tab) ========= */
+.viewer{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;
+  background:rgba(26,31,24,.45)}
+.viewer.hidden{display:none}
+.viewer-card{margin:clamp(10px,3vh,34px) auto;width:min(940px,94vw);flex:1;display:flex;
+  flex-direction:column;background:var(--bg);border:2px solid var(--ink);border-radius:10px;
+  overflow:hidden;box-shadow:0 30px 70px -30px rgba(0,0,0,.6)}
+.viewer-head{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--green);color:#F2ECD9}
+.viewer-path{font-family:var(--mono);font-size:.72rem;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.viewer-btn{font-family:var(--disp);font-weight:600;text-transform:uppercase;
+  letter-spacing:.1em;font-size:.7rem;background:transparent;color:#F2ECD9;
+  border:1px solid rgba(242,236,217,.5);border-radius:6px;padding:5px 10px;cursor:pointer}
+.viewer-btn:hover{background:rgba(242,236,217,.15)}
+.viewer-frame{flex:1;border:0;width:100%;background:#fff}
+@media(max-width:720px){
+  .viewer-card{margin:0;width:100vw;border:0;border-radius:0}
+}
+
+/* ---- queued ghost turns (2026-08-01 night): what the operator sent mid-turn, visible while it waits.
+   Dimmer + dashed so it can never be mistaken for a turn that already ran. ---- */
+.turn.queued{opacity:.68}
+.turn.queued .turn-body{border-style:dashed;background:var(--panel-lo)}
+.queued-chip{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;color:var(--olive);
+  border:1px dashed var(--olive);border-radius:3px;padding:1px 6px;text-transform:uppercase}

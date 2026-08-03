@@ -1,0 +1,91 @@
+{
+  "_readme": [
+    "Copy this file to mic.config.json and edit it. Every key is optional — an empty {} boots a",
+    "working Microphone. Keys starting with _ are comments and are ignored.",
+    "Full explanations: README.md (setup) and docs/SECURITY.md (before you touch `foreman`)."
+  ],
+
+  "_port": "The port the Mic listens on, loopback only. Override at runtime with MIC_PORT.",
+  "port": 8080,
+
+  "_workspaceRoot": [
+    "The tree your lines work in, and the ONLY tree the file viewer will serve from.",
+    "Relative paths resolve against the folder this server lives in. The default, '..',",
+    "means: clone the-microphone into the project you want to run, and it just works."
+  ],
+  "workspaceRoot": "..",
+
+  "_claudeBin": [
+    "Path to the claude binary. Leave empty to auto-detect: CLAUDE_BIN, then `claude` on PATH,",
+    "then the VS Code extension binary on Windows. Whatever it lands on is printed at boot."
+  ],
+  "claudeBin": "",
+
+  "_credentialsDir": [
+    "Where the approval word and any armed-turn secrets live. Deliberately OUTSIDE the workspace,",
+    "so no line can reach them by walking the tree and no commit can ever carry them.",
+    "Create it yourself: mkdir -p ~/.mic && chmod 700 ~/.mic"
+  ],
+  "credentialsDir": "~/.mic",
+
+  "_models": [
+    "Which models exist, what your spoken words map to, and what each standing seat is born on.",
+    "`known` is a whitelist: an id that is not in it is REJECTED at open time rather than",
+    "silently spawning a line on a model that does not exist.",
+    "PIN SITE: the same ids appear in the two <select> blocks in index.html."
+  ],
+  "models": {
+    "known": ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"],
+    "aliases": {
+      "opus": "claude-opus-5",
+      "sonnet": "claude-sonnet-5",
+      "haiku": "claude-haiku-4-5"
+    },
+    "default": "claude-sonnet-5",
+    "desk": "claude-haiku-4-5",
+    "foreman": "claude-opus-5"
+  },
+
+  "_folders": [
+    "Optional shortcuts for the 'where it works' picker when you open a line by hand.",
+    "The workspace root is always offered and is the right answer almost every time.",
+    "Leave this empty unless you genuinely run lines rooted in separate repos."
+  ],
+  "folders": [],
+
+  "_cockpit": [
+    "The Cockpit tab renders plain files you keep in your workspace — it writes nothing, ever.",
+    "Name the ones you keep and it renders them; leave a key out and that panel is simply absent.",
+    "The formats these parsers expect are written down in docs/COCKPIT.md. They are ordinary",
+    "markdown you would keep by hand anyway — no format is invented for the Cockpit's benefit.",
+    "Paths are relative to workspaceRoot. Absolute paths are refused."
+  ],
+  "cockpit": {
+    "files": {
+      "board": "BOARD.md",
+      "backlog": "BACKLOG.md",
+      "now": "NOW.json",
+      "pulse": "",
+      "desk": "",
+      "sides": []
+    }
+  },
+
+  "_foreman": [
+    "⚠ READ docs/SECURITY.md BEFORE ENABLING THIS. The Foreman is one line that can be handed",
+    "elevated helpers for exactly one turn, when your reply carries the approval word.",
+    "",
+    "The word is a PRESENCE CEREMONY — proof a human is at the keyboard approving — and it is NOT",
+    "a boundary against a hostile line: every line runs as the same OS user, so any line can read",
+    "the word file. Never put a destructive action behind the word alone.",
+    "",
+    "OFF by default. `helpers` lists filenames in helpers/ (see examples/README.md for the pattern);",
+    "`secrets` maps an environment variable to a filename inside credentialsDir, handed to the armed",
+    "spawn only, for that one turn. Both ship empty on purpose."
+  ],
+  "foreman": {
+    "enabled": false,
+    "helpers": [],
+    "secrets": {}
+  }
+}

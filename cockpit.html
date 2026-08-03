@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Shop Floor</title>
+<!-- Same folder as the Mic, so the house palette + fonts come along for free and this page can
+     never drift from the Mic's look. Same origin as /api/threads too - which is the whole point:
+     nothing here names a host, so it works identically on the desk and on the PHONE.
+
+     REBUILT 2026-08-01 (decisions 154a / 155 / 156a). The old page dumped all of BOARD.md - the
+     foreman's 10KB working ledger - onto a glance surface, through a renderer with no table
+     support (the decision register rendered as pipe soup). the operator's spec for this page, verbatim:
+     "What lines need an answer now?" up top, "the current working-on summary right underneath."
+     One responsive page, two postures:
+       - PHONE (narrow): the radar. Needs-you lines, working-on, lines, up-next, a THIN decision
+         roster (you answer decisions IN THE LINE they belong to, never here - the roster only
+         guarantees an open number can never silently vanish), pulse.
+       - DESKTOP (wide): the Service Manager's Office - same data, three columns, room for the
+         decisions' full sentences. The Sunday-trial surface that stands in for VS Code steering.
+     Data is the TYPED SPINE, never parsed prose: /api/threads (machine truth), PULSE.json
+     (machine truth), NOW.json (the one judgment layer, updated every working turn), and the
+     decision register parsed server-side from BOARD.md's stable table. The ledger itself is one
+     tap away via the house reader - this page stops pretending to be it. -->
+<link rel="stylesheet" href="mic.css">
+<style>
+  /* mic.css's shared `body{height:100vh;overflow:hidden}` is written for the app shell
+     (index.html), which manages its own internal scroll regions. This page is a standalone,
+     naturally-tall document loaded in an iframe - override height/overflow so it scrolls. */
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body);
+         height:auto; overflow-y:auto; overflow-x:hidden; }
+  .wrap { max-width:1280px; margin:0 auto; padding:14px 14px 40px; }
+
+  header.sf { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin:4px 0 14px; }
+  header.sf h1 { font-family:var(--disp); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+                 font-size:22px; color:var(--green); margin:0; }
+  .stamp { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .stamp.bad { color:var(--rust); font-weight:600; }
+  .tally { margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .tally b { color:var(--green); }
+
+  h2.sec { font-family:var(--disp); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+           font-size:13px; color:var(--olive); margin:0 0 8px; }
+  h2.sec .hint { font-family:var(--mono); font-size:10px; letter-spacing:.04em; text-transform:none;
+                 color:var(--muted); font-weight:400; margin-left:8px; }
+
+  /* ---- the responsive frame: one page, two postures (decision 155). Phone stacks in radar
+     order; wide becomes the Service Manager's Office, three columns. The second row is last,
+     so unequal column heights only pad the page bottom. ---- */
+  /* The room, three volumes + a banner (the operator's 2026-08-01 night UX pass): the PULSE is a thin
+     full-width strip right under the header on BOTH form factors -- machine truth first, then
+     the room. Columns read LEFT = you (needs-you, decisions), MIDDLE = now (working-on, lines),
+     RIGHT = next (up-next, the pile). */
+  .grid { display:grid; gap:18px;
+          grid-template-areas: "pulse" "needs" "now" "lines" "next" "decis" "pile"; }
+  section[data-a=needs]{grid-area:needs} section[data-a=now]{grid-area:now}
+  section[data-a=lines]{grid-area:lines} section[data-a=next]{grid-area:next}
+  section[data-a=decis]{grid-area:decis} section[data-a=pulse]{grid-area:pulse}
+  section[data-a=pile]{grid-area:pile}
+  @media (min-width:980px){
+    .grid { grid-template-columns:1.05fr 1.25fr .85fr; align-items:start;
+            grid-template-areas: "pulse pulse pulse" "needs now next" "decis lines pile"; }
+  }
+
+  /* ---- line cards (shared by NEEDS YOU and THE LINES) ---- */
+  .line { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--metal);
+          border-radius:6px; padding:10px 12px; margin:0 0 9px; display:grid;
+          grid-template-columns:1fr auto; gap:4px 12px; align-items:baseline; }
+  .line.working { border-left-color:var(--lamp-lit); background:var(--panel-hi); }
+  .line.waiting { border-left-color:var(--rust); }
+  .line.idle    { opacity:.72; padding:7px 12px; }
+  .nm { font-family:var(--disp); font-size:16px; font-weight:600; letter-spacing:.02em;
+        color:var(--engrave); overflow-wrap:anywhere; }
+  .line.waiting .nm { font-size:18px; }   /* needs-you reads at arm's length */
+  .nm .role { font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+              color:var(--olive); border:1px solid var(--line); border-radius:3px;
+              padding:1px 5px; margin-left:7px; vertical-align:2px; white-space:nowrap; }
+  .status { font-family:var(--mono); font-size:12px; text-align:right; white-space:nowrap; }
+  .status.working { color:var(--green); font-weight:600; }
+  .status.waiting { color:var(--rust); font-weight:700; }
+  .status.idle    { color:var(--muted); }
+  .meta { grid-column:1 / -1; font-family:var(--mono); font-size:11px; color:var(--muted-hi);
+          display:flex; gap:14px; flex-wrap:wrap; }
+  .empty { padding:14px 4px 18px; color:var(--muted); font-style:italic; font-size:13px; }
+
+  /* ---- WORKING ON: the NOW.json judgment layer. The freshness stamp is the honesty device -
+     same trick as the pulse: this card may never quietly lie, so its age is always on it and
+     it rusts when stale. ---- */
+  .nowcard { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--green);
+             border-radius:6px; padding:12px 14px; box-shadow:0 1px 2px rgba(26,31,24,.06); }
+  .nowcard .txt { font-size:15px; line-height:1.5; color:var(--engrave); }
+  .nowcard .inplay { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .nowcard .inplay .ipk { font-family:var(--mono); font-size:10px; letter-spacing:.08em;
+             text-transform:uppercase; color:var(--muted); margin-right:2px; }
+  .nowcard .inplay .ipl { font-size:12px; padding:2px 9px; border-radius:999px;
+             border:1px solid var(--line); background:var(--card); color:var(--engrave); }
+  .nowcard .inplay .ipl-nm { font-weight:600; }
+  .nowcard .inplay .ipl-tp { color:var(--muted); font-weight:400; margin-left:6px; }
+  .nowcard .inplay .ipl.on { border-color:var(--green); }
+  .nowcard .inplay .ipl.on .ipl-nm { color:var(--green); }
+  .nowcard .fresh { font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:8px; }
+  .nowcard .fresh.warn { color:var(--rust); font-weight:600; }
+  .nowcard.missing { border-left-color:var(--metal); }
+  .nowcard.missing .txt { color:var(--muted); font-style:italic; font-size:13px; }
+
+  /* ---- UP NEXT ---- */
+  .next li { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--metal);
+             border-radius:5px; padding:8px 12px; margin:0 0 8px; list-style:none;
+             font-size:13px; line-height:1.45; color:var(--ink); }
+  .next ul { margin:0; padding:0; }
+
+  /* ---- OPEN DECISIONS: a roster, not a workbench. the operator answers decisions in the line they
+     belong to; this list only guarantees an open number can never silently vanish. Thin rows,
+     clamped text on the phone, full sentences at desk width. ---- */
+  .decis .row { display:flex; gap:10px; align-items:baseline; padding:7px 2px;
+                border-bottom:1px solid var(--line); }
+  .decis .row:last-child { border-bottom:0; }
+  .decis .id { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--engrave);
+               min-width:2.6em; text-align:right; flex:none; }
+  .decis .dtxt { font-size:12.5px; line-height:1.45; color:var(--muted-hi); min-width:0;
+                 display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  @media (min-width:980px){ .decis .dtxt { -webkit-line-clamp:4; font-size:13px; } }
+  .decis .dtxt code { font-family:var(--mono); font-size:11px; background:var(--panel-lo);
+                      padding:0 3px; border-radius:3px; }
+  .decis .st { font-family:var(--mono); font-size:10px; white-space:nowrap; flex:none;
+               color:var(--muted); }
+  .decis .st.open { color:var(--rust); font-weight:700; }
+  .decis .st.soft { color:var(--olive); font-weight:600; }
+
+  /* ---- THE PULSE: machine facts, written by the sampler, never by judgment. A thin banner
+     under the header, never a box eating a column. The ledger link rides its right edge. ---- */
+  .pulse { display:flex; gap:8px 18px; flex-wrap:wrap; align-items:baseline;
+           font-family:var(--mono); font-size:11.5px; color:var(--muted-hi);
+           border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+           padding:7px 2px; }
+  .pulse b { color:var(--engrave); font-weight:600; }
+  .pulse .warn { color:var(--rust); font-weight:600; }
+  .pulse .ledgerlink { margin-left:auto; }
+
+  .ledgerlink { font-family:var(--mono); font-size:11.5px; }
+  .ledgerlink a { color:var(--olive); text-decoration:none; border-bottom:1px dotted var(--olive); }
+
+  /* ---- THE PILE: the shop's quiet queue (BACKLOG ## Now headlines). Collapsed by default -
+     visible, pickable ("open a line on X"), never in the way. The quiet volume; the lines are
+     loud and the decisions murmur. ---- */
+  .pile details { border:1px solid var(--line); border-radius:6px; background:var(--card); }
+  .pile summary { cursor:pointer; padding:10px 12px; font-family:var(--disp); font-weight:600;
+                  letter-spacing:.05em; font-size:13px; text-transform:uppercase; color:var(--olive);
+                  list-style:none; }
+  .pile summary::-webkit-details-marker { display:none; }
+  .pile summary::before { content:"▸ "; }
+  .pile details[open] summary::before { content:"▾ "; }
+  .pile summary .hint { font-family:var(--mono); font-size:10px; text-transform:none;
+                        letter-spacing:.04em; color:var(--muted); font-weight:400; margin-left:8px; }
+  /* clamp lives on the INNER span, never the padded row: padding on a -webkit-box reveals the
+     clipped lines as a half-cut bleed (the decisions rows clamp an unpadded span for the same
+     reason) */
+  .pile .row { padding:7px 12px; border-top:1px solid var(--line); }
+  .pile .rt { font-size:12.5px; line-height:1.45; color:var(--muted-hi);
+              display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .pile .rt code { font-family:var(--mono); font-size:11px; background:var(--panel-lo);
+                   padding:0 3px; border-radius:3px; }
+  .pile .behind { padding:8px 12px; border-top:1px solid var(--line); font-family:var(--mono);
+                  font-size:10.5px; color:var(--muted); }
+  .pile .behind a { color:var(--olive); text-decoration:none; border-bottom:1px dotted var(--olive); }
+
+  @media (max-width:560px){
+    .wrap { padding:10px 10px 30px; }
+    .line { grid-template-columns:1fr; }
+    .status { text-align:left; }
+    header.sf h1 { font-size:19px; }
+    .tally { margin-left:0; width:100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="sf">
+    <h1>The Shop Floor</h1>
+    <span class="stamp" id="stamp">connecting…</span>
+    <span class="tally" id="tally"></span>
+  </header>
+
+  <div class="grid">
+    <section data-a="needs">
+      <h2 class="sec">◆ Needs you</h2>
+      <div id="needs"></div>
+    </section>
+
+    <section data-a="now">
+      <h2 class="sec">Working on</h2>
+      <div class="nowcard" id="nowcard" hidden>
+        <div class="txt" id="nowtxt"></div>
+        <div class="inplay" id="inplay" hidden></div>
+        <div class="fresh" id="nowfresh"></div>
+      </div>
+    </section>
+
+    <section data-a="lines">
+      <h2 class="sec">The lines</h2>
+      <div id="lines"></div>
+    </section>
+
+    <section data-a="next" id="nextsec" hidden>
+      <h2 class="sec">Up next</h2>
+      <div class="next"><ul id="nextlist"></ul></div>
+    </section>
+
+    <section data-a="decis" id="decsec" hidden>
+      <h2 class="sec">Open decisions <span class="hint">answer in their line — this list just keeps them visible</span></h2>
+      <div class="decis" id="decis"></div>
+    </section>
+
+    <section data-a="pile" id="pilesec" hidden>
+      <div class="pile">
+        <details>
+          <summary>The pile <span id="pilecount"></span><span class="hint">the shop's queue — pick one, tell a line "work on it"</span></summary>
+          <div id="pilerows"></div>
+        </details>
+      </div>
+    </section>
+
+    <section data-a="pulse">
+      <div class="pulse" id="pulse" hidden></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var needsEl = document.getElementById("needs");
+  var linesEl = document.getElementById("lines");
+  var stampEl = document.getElementById("stamp");
+  var tallyEl = document.getElementById("tally");
+  var lastOk  = 0;
+  var lastNowIso = null;
+  var lastLineIso = null;   // freshest lastTurnAt across all lines -- the live "shop is working" signal,
+                            // independent of NOW.json (which only a driving session rewrites). 3.1.
+
+  // The reader is served same-origin, but the files the Cockpit renders live out in the WORKSPACE,
+  // one level up from this folder's static jail -- so links go through the reader's /file door with
+  // a workspace-relative path. WHICH files is config (mic.config.json cockpit.files); the server
+  // hands us the names on /api/shop, so no path is ever written into this page.
+  var SHOP_FILES = {};
+  function fileHref(key, viewer) {
+    var rel = SHOP_FILES[key];
+    if (!rel) return null;
+    return (viewer ? "file-viewer.html?path=" : "/file?path=") + encodeURIComponent(rel);
+  }
+
+  // "4m" / "1h 12m" / "5d" - shop language. Precision DROPS as the number grows.
+  function dur(ms){
+    if (!ms || ms < 0) return "0s";
+    var s = Math.floor(ms/1000);
+    if (s < 60) return s + "s";
+    var m = Math.floor(s/60);
+    if (m < 60) return m + "m";
+    var h = Math.floor(m/60);
+    if (h < 48) return h + "h" + (m % 60 ? " " + (m % 60) + "m" : "");
+    return Math.floor(h/24) + "d";
+  }
+  function ago(iso){
+    if (!iso) return "never";
+    var t = Date.parse(iso);
+    if (isNaN(t)) return "never";
+    return dur(Date.now() - t) + " ago";
+  }
+  function el(tag, cls, txt){
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt !== undefined) n.textContent = txt;   // textContent, never innerHTML: a line TITLE can
+    return n;                                     // carry anything a stranger got into it.
+  }
+  // ESCAPE-FIRST inline markdown for decision text (it carries ** and `code`). Everything is
+  // HTML-escaped before a single tag is emitted - the shop's transcription law.
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function mdInline(s){
+    return esc(s)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");   // text yes, click-target no
+  }
+
+  function lineRow(t, state){
+    var row = el("div", "line " + state);
+    var nm = el("div","nm", t.title || t.slug);
+    if (t.role && t.role !== "line") nm.appendChild(el("span","role", t.role));
+    row.appendChild(nm);
+    var txt = state === "working" ? "● WORKING · " + dur(t.elapsedMs)
+            : state === "waiting" ? "◆ your turn"
+            : "idle · " + ago(t.lastTurnAt);
+    if (t.queued > 0) txt += "  (+" + t.queued + " queued)";
+    row.appendChild(el("div","status " + state, txt));
+    var meta = el("div","meta");
+    meta.appendChild(el("span", null, t.model || "?"));
+    meta.appendChild(el("span", null, t.turnCount + (t.turnCount === 1 ? " turn" : " turns")));
+    if (state !== "idle") meta.appendChild(el("span", null, "last " + ago(t.lastTurnAt)));
+    row.appendChild(meta);
+    return row;
+  }
+
+  function render(threads){
+    var waiting = threads.filter(function(t){ return !t.busy && t.unread > 0; });
+    var rest    = threads.filter(function(t){ return waiting.indexOf(t) < 0; });
+    rest.sort(function(a,b){
+      var d = (b.busy?1:0) - (a.busy?1:0);
+      if (d) return d;
+      return (Date.parse(b.lastTurnAt || 0) || 0) - (Date.parse(a.lastTurnAt || 0) || 0);
+    });
+    waiting.sort(function(a,b){
+      return (Date.parse(b.lastTurnAt || 0) || 0) - (Date.parse(a.lastTurnAt || 0) || 0);
+    });
+
+    needsEl.textContent = "";
+    if (!waiting.length){
+      needsEl.appendChild(el("div","empty","Nothing waiting on you."));
+    } else {
+      waiting.forEach(function(t){ needsEl.appendChild(lineRow(t, "waiting")); });
+    }
+
+    linesEl.textContent = "";
+    if (!rest.length && !waiting.length){
+      linesEl.appendChild(el("div","empty","No lines open. Ask the Desk to open one."));
+    } else {
+      rest.forEach(function(t){ linesEl.appendChild(lineRow(t, t.busy ? "working" : "idle")); });
+    }
+
+    var working = threads.filter(function(t){ return t.busy; }).length;
+    tallyEl.textContent = "";
+    tallyEl.appendChild(el("span", null, threads.length + " lines · "));
+    tallyEl.appendChild(el("b", null, working + " working"));
+    if (waiting.length) tallyEl.appendChild(el("span", null, " · " + waiting.length + " awaiting you"));
+
+    // ---- 3.1: the headline reflects LIVE cross-line activity, not just NOW.json ----
+    // Freshest turn across every line = proof the shop is working, even when NOW.json is old.
+    lastLineIso = null;
+    var freshest = 0;
+    threads.forEach(function(t){
+      var ts = Date.parse(t.lastTurnAt || 0) || 0;
+      if (ts > freshest){ freshest = ts; lastLineIso = t.lastTurnAt; }
+    });
+    // "In play now" -- the topics on the floor, at line granularity. (Real per-line topics arrive
+    // with 3.2; until then a line's title is its topic.) A line counts if it's working now or took
+    // a turn in the last 30 min. Ordered working-first, then most-recent.
+    var CUT = Date.now() - 1800000;
+    var live = threads.filter(function(t){
+      return t.busy || (Date.parse(t.lastTurnAt || 0) || 0) >= CUT;
+    }).sort(function(a, b){
+      var d = (b.busy ? 1 : 0) - (a.busy ? 1 : 0);
+      if (d) return d;
+      return (Date.parse(b.lastTurnAt || 0) || 0) - (Date.parse(a.lastTurnAt || 0) || 0);
+    });
+    var ip = document.getElementById("inplay");
+    if (ip){
+      if (live.length){
+        ip.textContent = "";
+        ip.appendChild(el("span", "ipk", "In play"));
+        live.forEach(function(t){
+          var chip = el("span", "ipl" + (t.busy ? " on" : ""));
+          chip.appendChild(el("span", "ipl-nm", t.title || t.slug));
+          var tp = (t.topic || "").trim();   // 3.2: the line's own words for what it's on now
+          if (tp) chip.appendChild(el("span", "ipl-tp", tp));   // el() = textContent, injection-safe
+          ip.appendChild(chip);
+        });
+        ip.hidden = false;
+      } else { ip.hidden = true; }
+    }
+    paintFresh();
+  }
+
+  function load(){
+    fetch("/api/threads", { cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw new Error("http " + r.status); return r.json(); })
+      .then(function(d){
+        render(Array.isArray(d) ? d : (d.threads || []));
+        lastOk = Date.now();
+        stampEl.className = "stamp";
+        stampEl.textContent = "● live";
+      })
+      .catch(function(){
+        // Say so loudly. A board that silently shows stale lines is worse than one that's plainly
+        // down - the whole point is that the operator can trust it at a glance.
+        stampEl.className = "stamp bad";
+        stampEl.textContent = lastOk ? "● STALE — no answer for " + dur(Date.now()-lastOk)
+                                     : "● cannot reach the Mic";
+      });
+  }
+
+  /* ---- the typed spine: NOW.json + the parsed decision register + the pulse ---- */
+
+  function renderNow(now){
+    var card = document.getElementById("nowcard");
+    var txt  = document.getElementById("nowtxt");
+    var fr   = document.getElementById("nowfresh");
+    card.hidden = false;
+    if (!now || !now.workingOn){
+      card.className = "nowcard missing";
+      txt.textContent = "No working-on signal (NOW.json absent) — the shop may be closed, or a session forgot its turn update.";
+      fr.textContent = "";
+      lastNowIso = null;
+      return;
+    }
+    card.className = "nowcard";
+    txt.textContent = now.workingOn;
+    lastNowIso = now.updatedAt || null;
+    paintFresh();
+
+    var sec = document.getElementById("nextsec");
+    var ul  = document.getElementById("nextlist");
+    ul.textContent = "";
+    var items = Array.isArray(now.upNext) ? now.upNext.filter(Boolean) : [];
+    if (items.length){
+      items.forEach(function(s){ ul.appendChild(el("li", null, String(s))); });
+      sec.hidden = false;
+    } else { sec.hidden = true; }
+  }
+
+  // The freshness stamp is the card's honesty device: repainted every 30s so a stale claim rusts
+  // in front of you even between fetches. 45 min = rust (a working turn should never be rarer).
+  function paintFresh(){
+    var fr = document.getElementById("nowfresh");
+    // The board is "live" if EITHER the judgment note (NOW.json) or ANY line moved recently. On a
+    // Mic day, line turns keep it fresh even when no session rewrites NOW.json -- so the stamp tracks
+    // the more-recent of the two, and names which one. (3.1)
+    var nowT  = lastNowIso  ? Date.parse(lastNowIso)  : NaN;
+    var lineT = lastLineIso ? Date.parse(lastLineIso) : NaN;
+    var newest = Math.max(isNaN(nowT) ? 0 : nowT, isNaN(lineT) ? 0 : lineT);
+    if (!newest){ fr.textContent = ""; fr.className = "fresh"; return; }
+    var age = Date.now() - newest;
+    var byLine = !isNaN(lineT) && lineT >= (isNaN(nowT) ? 0 : nowT);
+    fr.textContent = (byLine ? "live · a line moved " : "note updated ") + dur(age) + " ago";
+    fr.className = age > 2700000 ? "fresh warn" : "fresh";
+  }
+
+  function renderDecisions(rows){
+    var sec = document.getElementById("decsec");
+    var box = document.getElementById("decis");
+    box.textContent = "";
+    rows = rows || [];
+    if (!rows.length){ sec.hidden = true; return; }
+    rows.forEach(function(r){
+      var row = el("div","row");
+      row.appendChild(el("span","id", r.id));
+      var t = el("span","dtxt");
+      t.innerHTML = mdInline(r.text || "");   // safe: mdInline escapes before emitting tags
+      row.appendChild(t);
+      var st = String(r.status || "");
+      var cls = /🔴/.test(st) ? "st open" : /🟡/.test(st) ? "st soft" : "st";
+      // the status cell carries dates and clauses; the roster only needs the state word
+      var short = /🔴/.test(st) ? "🔴 open" : /🟡/.test(st) ? "🟡 open" : /🅧|PARK/i.test(st) ? "parked" : st.slice(0, 14);
+      row.appendChild(el("span", cls, short));
+      box.appendChild(row);
+    });
+    sec.hidden = false;
+  }
+
+  function renderPile(rows, behind){
+    var sec = document.getElementById("pilesec");
+    var box = document.getElementById("pilerows");
+    var cnt = document.getElementById("pilecount");
+    rows = rows || [];
+    if (!rows.length){ sec.hidden = true; return; }
+    cnt.textContent = "— " + rows.length + " item" + (rows.length === 1 ? "" : "s");
+    box.textContent = "";
+    rows.forEach(function(r){
+      var d = el("div","row");
+      var t = el("span","rt");
+      t.innerHTML = mdInline(String(r.text || ""));   // safe: mdInline escapes before emitting tags
+      d.appendChild(t);
+      box.appendChild(d);
+    });
+    // The pile is ## Now only -- say plainly what waits behind it, so 30 visible items never
+    // read as "that's the whole backlog" (there were 83 more the night this footer was born).
+    var names = behind ? Object.keys(behind) : [];
+    if (names.length){
+      var f = el("div","behind");
+      f.appendChild(document.createTextNode(
+        names.map(function(n){ return n.split("/")[0].trim().toLowerCase() + ": " + behind[n]; })
+             .join(" · ") + " — "));
+      var a = el("a", null, "the full backlog →");
+      a.href = fileHref("backlog", true);
+      a.target = "_blank"; a.rel = "noopener";
+      f.appendChild(a);
+      box.appendChild(f);
+    }
+    if (location.hash === "#pile") sec.querySelector("details").open = true;   // deep-link the queue
+    sec.hidden = false;
+  }
+
+  function renderPulse(p, awaitingSweep){
+    var pEl = document.getElementById("pulse");
+    if (!p && awaitingSweep == null){ pEl.hidden = true; return; }
+    pEl.textContent = "";
+    var add = function(label, val, warn){
+      var s = el("span");
+      s.appendChild(document.createTextNode(label + " "));
+      s.appendChild(el("b", warn ? "warn" : null, String(val)));
+      pEl.appendChild(s);
+    };
+    var appendLedger = function(){
+      var lk = el("span","ledgerlink");
+      lk.appendChild(document.createTextNode("the full ledger → "));
+      var a = el("a", null, "BOARD.md");
+      a.href = fileHref("board", true); a.target = "_blank"; a.rel = "noopener";
+      lk.appendChild(a);
+      // YOUR DESK: an optional page of your own -- a dashboard, a cheat sheet, whatever you keep --
+      // served through the Mic's own /file door so it reaches the phone AND the desk with no second
+      // server. Set cockpit.files.desk in mic.config.json; with nothing set, the link is omitted.
+      var deskHref = fileHref("desk", false);
+      if (deskHref) {
+        lk.appendChild(document.createTextNode("  ·  "));
+        var d = el("a", null, "your desk");
+        d.href = deskHref;
+        d.target = "_blank"; d.rel = "noopener";
+        lk.appendChild(d);
+      }
+      pEl.appendChild(lk);
+    };
+    // The settled-shop signal (decision 158a): closed lines whose work is not yet folded into a
+    // commit. 0 = everything integrated -- the number that lets the operator trust the tree at a glance.
+    if (typeof awaitingSweep === "number"){
+      add("🧹 awaiting fold", awaitingSweep === 0 ? "0 — settled" : awaitingSweep, awaitingSweep > 0);
+    }
+    if (!p){ appendLedger(); pEl.hidden = pEl.childNodes.length === 1; return; }
+    // A STALE PULSE IS THE POINT. If this number gets large the machine facts are fiction, and a
+    // board confidently showing fiction is the failure mode this page exists to avoid.
+    if (p.sampledAt){
+      var age = Date.now() - Date.parse(p.sampledAt);
+      add("pulse", isNaN(age) ? "?" : dur(age) + " ago", !isNaN(age) && age > 600000);
+    }
+    if (typeof p.claudeProcesses === "number") add("engines", p.claudeProcesses);
+    if (typeof p.activeJobs5m === "number") add("jobs/5m", p.activeJobs5m);
+    (p.repos || []).forEach(function(r){
+      var bits = [];
+      if (r.dirtyFiles) bits.push(r.dirtyFiles + " dirty");
+      if (r.extraWorktrees) bits.push(r.extraWorktrees + " wt");
+      if (bits.length) add(r.repo, bits.join(" · "), r.extraWorktrees > 5);
+    });
+    appendLedger();
+    pEl.hidden = pEl.childNodes.length === 0;
+  }
+
+  function loadShop(){
+    fetch("/api/shop", { cache:"no-store" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d) return;
+        SHOP_FILES = d.files || {};
+        renderNow(d.now);
+        renderDecisions(d.decisions);
+        renderPile(d.pile, d.pileBehind);
+        renderPulse(d.pulse, typeof d.awaitingSweep === "number" ? d.awaitingSweep : null);
+      })
+      .catch(function(){ /* the lines panel owns the connection alarm; don't double-shout */ });
+  }
+
+  load(); loadShop();
+  // Costs nothing: a browser fetching local JSON. No model, no tokens, no agent. State on a
+  // faster beat than judgment: lines every 15s, the spine every 30s, freshness repaint between.
+  setInterval(load, 15000);
+  setInterval(loadShop, 30000);
+  setInterval(paintFresh, 30000);
+  setInterval(function(){     // keep elapsed/ago honest between fetches
+    if (lastOk && Date.now() - lastOk > 45000) load();
+  }, 5000);
+})();
+</script>
+</body>
+</html>

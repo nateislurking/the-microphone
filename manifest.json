@@ -1,0 +1,25 @@
+{
+  "name": "The Microphone",
+  "short_name": "Microphone",
+  "description": "Talk into it, run the shop. the operator's live threads, one conversation.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#EEE1C6",
+  "theme_color": "#00471B",
+  "icons": [
+    {
+      "src": "assets/mic-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/mic-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

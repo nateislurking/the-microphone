@@ -1,0 +1,49 @@
+# ============================================================================
+#  The Microphone as a systemd user service (Linux).
+#
+#  Install:
+#    mkdir -p ~/.config/systemd/user
+#    cp units/mic.service.example ~/.config/systemd/user/mic.service
+#    # edit WorkingDirectory and Environment below to match your machine
+#    systemctl --user daemon-reload
+#    systemctl --user enable --now mic
+#
+#  Then:  systemctl --user restart mic     (the ONLY way to restart it)
+#         journalctl --user -u mic -f      (the log)
+#
+#  ⚠ Do not hand-launch `node server.js` once this unit exists. A hand-launched
+#    server LOOKS alive -- the page renders, the API answers -- but it does not
+#    carry the environment set below, so every line turn dies on a missing
+#    binary. Restart the unit instead.
+#
+#  ⚠ A CLEAN exit stays dead. Restart=on-failure means systemd will not
+#    resurrect a server that exited 0, which is deliberate: `systemctl --user
+#    stop mic` should stop it. The in-app restart path exits NON-zero for
+#    exactly this reason.
+#
+#  If you want it running while you are logged out:
+#    sudo loginctl enable-linger $USER
+# ============================================================================
+[Unit]
+Description=The Microphone
+After=network.target
+
+[Service]
+Type=simple
+
+# EDIT THESE TWO.
+WorkingDirectory=%h/the-microphone
+Environment=CLAUDE_BIN=%h/.local/bin/claude
+
+# Optional: override the port without touching mic.config.json.
+# Environment=MIC_PORT=8080
+
+ExecStart=/usr/bin/env node server.js
+Restart=on-failure
+RestartSec=5
+
+# The server binds loopback only and reads your files as you. Keep it that way.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,24 @@
+/* THE HOUSE FONTS — local woff2s, copied from natestpierre.me production (2026-07-17, round 2).
+   Include from any walkthrough page with a correct relative path, e.g. from system-x/page.html:
+   <link rel="stylesheet" href="../fonts/fonts.css">
+   The url() paths below are relative to THIS file, so the link works from any depth.
+   After including, the house stacks actually load:
+     --disp: 'Barlow Condensed'  (500/600/700)
+     --body: 'Barlow'            (400/500/600)
+     --mono: 'JetBrains Mono'    (600)
+   VERIFY in your screenshot that headings render condensed — if they look like Arial, the path is wrong. */
+
+@font-face { font-family:'Barlow'; font-weight:400; font-style:normal; font-display:swap;
+  src: url('barlow-400.woff2') format('woff2'); }
+@font-face { font-family:'Barlow'; font-weight:500; font-style:normal; font-display:swap;
+  src: url('barlow-500.woff2') format('woff2'); }
+@font-face { font-family:'Barlow'; font-weight:600; font-style:normal; font-display:swap;
+  src: url('barlow-600.woff2') format('woff2'); }
+@font-face { font-family:'Barlow Condensed'; font-weight:500; font-style:normal; font-display:swap;
+  src: url('barlow-condensed-500.woff2') format('woff2'); }
+@font-face { font-family:'Barlow Condensed'; font-weight:600; font-style:normal; font-display:swap;
+  src: url('barlow-condensed-600.woff2') format('woff2'); }
+@font-face { font-family:'Barlow Condensed'; font-weight:700; font-style:normal; font-display:swap;
+  src: url('barlow-condensed-700.woff2') format('woff2'); }
+@font-face { font-family:'JetBrains Mono'; font-weight:600; font-style:normal; font-display:swap;
+  src: url('jetbrains-mono-600.woff2') format('woff2'); }
