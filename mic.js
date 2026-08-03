@@ -312,11 +312,23 @@
     // working state
     if (t.busy) {
       el.working.classList.add("on");
-      el.workingTxt.textContent = "working…" + (t.queued ? " (" + t.queued + " queued)" : "");
+      /* THE ELAPSED CLOCK (decision 40.2a). 'working…' alone could not tell a long turn from a
+         wedged one -- the two look identical, and the Mic deliberately shows prose rather than
+         tool calls, so nothing else fills that gap. A running clock does not say WHAT it is
+         doing, but after a few days you know the shape of normal, and a turn sitting at 18
+         minutes when this line usually takes 40 seconds tells you enough to go look.
+         Anchored to a start time rather than incremented, and re-anchored on every poll, so it
+         self-corrects and cannot drift; the local tick is only there to make it move between
+         polls (which land every 1.6s). */
+      workStartedAt = Date.now() - (t.elapsedMs || 0);
+      workQueued = t.queued || 0;
+      renderWorking();
+      startWorkClock();
       el.replybox.disabled = false;   // the operator may queue the next reply
       el.sendbtn.disabled = false;
     } else {
       el.working.classList.remove("on");
+      stopWorkClock();
       el.replybox.disabled = false;
       el.sendbtn.disabled = false;
     }
@@ -416,6 +428,30 @@
       var d = new Date(iso);
       return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     } catch (e) { return iso; }
+  }
+
+  /* ---------- the working clock (decision 40.2a) ----------
+     Deliberately the SMALLEST thing that answers 'is it wedged?': a duration, no activity feed,
+     no tool names. See the note at its call site for why the anchor-and-re-anchor shape matters. */
+  var workStartedAt = 0, workQueued = 0, workTimer = null;
+  function fmtElapsed(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    if (s < 60) return s + "s";
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + "m " + (s % 60) + "s";
+    return Math.floor(m / 60) + "h " + (m % 60) + "m";
+  }
+  function renderWorking() {
+    if (!el.workingTxt) return;
+    el.workingTxt.textContent = "working… " + fmtElapsed(Date.now() - workStartedAt) +
+      (workQueued ? "  ·  " + workQueued + " queued" : "");
+  }
+  function startWorkClock() {
+    if (workTimer) return;
+    workTimer = setInterval(renderWorking, 1000);
+  }
+  function stopWorkClock() {
+    if (workTimer) { clearInterval(workTimer); workTimer = null; }
   }
 
   /* ---------- sending a reply ---------- */

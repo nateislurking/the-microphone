@@ -1474,6 +1474,12 @@ function apiThreadDetail(res, query) {
     slug, title: meta.title, cwd: meta.cwd, model: meta.model, id: meta.id,
     created: meta.created, started: !!meta.started, unread: meta.unread || 0,
     busy: st.busy, queued: st.queue.length,
+    /* elapsedMs: how long the in-flight turn has been running, 0 when idle. The LIST endpoint has
+       carried this since it was built; THIS one -- the endpoint the open conversation actually
+       polls -- did not, which is why the working strip could only ever say 'working…' with no
+       duration behind it. Same computation and same source of truth (st.startedAt) as the list,
+       so the strip and the chip can never disagree about how long something has been running. */
+    elapsedMs: (st.busy && st.startedAt) ? Date.now() - st.startedAt : 0,
     /* WHAT is queued, not just how many (the operator, 2026-08-01 night: sent a reply mid-turn and
        could see only "1 queued" -- a message you could no longer read anywhere). The glass shows
        these under the working strip. ⚠ REDACT THE WORD: a queued FOREMAN reply may carry the
