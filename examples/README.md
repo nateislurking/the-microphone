@@ -38,6 +38,11 @@ to the armed spawn as `$NOTE_API_KEY`, for that one turn only.
    to grant one and not the other.
 5. **Say out loud when it cannot be undone.** A real send has no undo; the comment at the top of
    the script is the last place a person can notice that.
+6. **If a helper CREATES something, write its undo in the same sitting.** This one was learned the
+   expensive way. A door that can mint a live API key and cannot revoke one is the wrong shape —
+   and the agent will notice before you do: ours once refused a perfectly reasonable action partly
+   *because* it knew it had no way to take it back. That is correct behaviour, and it is telling
+   you the door is half-built. Create and un-create are one piece of work, not two.
 
 ## The baseline check — why rule 1 isn't enough on its own
 
