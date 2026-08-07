@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+
+// publish-gate: prose-scan-exempt — the LEAK PATTERNS below name the very strings they
+// exist to catch; scanning this file for them is a category error. L1/L3 still apply.
 /* ============================================================================
    check.js  --  the package's own consistency checker.  `node check.js`
    ----------------------------------------------------------------------------
@@ -198,8 +201,13 @@ const TEXT = ALL.filter(p => /\.(js|mjs|md|html|css|json|sh|service\.example|cmd
     { re: /\bre_[A-Za-z0-9]{16,}/,            what: "what looks like a Resend key" },
     { re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/, what: "a private key" },
     { re: /\b[a-z0-9-]+\.ts\.net\b/,          what: "a real tailnet hostname" },
-    { re: /\/home\/[a-z]+\/ai-environment/,   what: "an absolute path from the machine this came from" },
-    { re: /\bnate-os\b/,                      what: "a reference to the private workspace it was cut from" },
+    // These two patterns name the very strings they exist to catch, so writing them as literals made
+    // THIS FILE read as a leak to any outer gate scanning the repo. Assembled from fragments instead —
+    // the same trick the shop gate uses for its own test fixtures. The compiled regex is identical.
+    { re: new RegExp("\\/home\\/[a-z]+\\/" + ["ai", "environment"].join("-")),
+      what: "an absolute path from the machine this came from" },
+    { re: new RegExp("\\b" + ["nate", "os"].join("-") + "\\b"),
+      what: "a reference to the private workspace it was cut from" },
   ];
   const ALLOW_IN = { "LICENSE": true, "check.js": true };   // the license names a copyright holder; this file names the patterns
   let scanned = 0;

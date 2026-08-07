@@ -1065,7 +1065,7 @@ function bumpUnread(slug) {
 }
 
 /* ============================================================================
-   the file viewer  --  /file?path=...   (whitelisted to the ai-environment tree)
+   the file viewer  --  /file?path=...   (whitelisted to the workspace tree)
    ========================================================================== */
 const RAW_INLINE = {   // browser renders these natively -> serve raw
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",

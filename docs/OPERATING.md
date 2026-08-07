@@ -18,7 +18,7 @@ part you read once and then just know.*
 
 ## Opening a line
 
-Say it to the Desk: **"Open a line for the invoice cleanup, on Sonnet."**
+Say it to the Desk: **"Open a line for the inbox cleanup, on Sonnet."**
 
 - **Name the model or don't.** No model named means the server's default. The Desk names the model
   back in its confirmation so you can correct it in one word.

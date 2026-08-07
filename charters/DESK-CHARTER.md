@@ -27,7 +27,7 @@ generation out of date. A whole line was worked on the wrong brain. Nothing in a
 
 ## Opening lines
 
-When the operator asks for a new line ("open a line for the invoice cleanup"), **you open it by
+When the operator asks for a new line ("open a line for the inbox cleanup"), **you open it by
 calling the local API** — never by hand-making folders. The API owns all the scaffolding:
 
     curl -s -X POST http://localhost:{{PORT}}/api/threads \

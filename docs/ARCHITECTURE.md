@@ -60,7 +60,7 @@ phone and get one coherent answer.
 ## Idea two: lines, and the charter stamped at birth
 
 A **line** is a department. It has its own folder, its own session, its own model, and its own
-working directory. You open one per job — "the invoice line," "the website line" — and it holds
+working directory. You open one per job — "the inbox line," "the website line" — and it holds
 that context until you close it.
 
 Every line is born with a **charter** written into its folder as `CLAUDE.md`, so the session loads

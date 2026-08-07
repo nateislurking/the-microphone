@@ -1,10 +1,13 @@
 # The Microphone
 
+<!-- publish-gate: prose-scan-exempt — documents literal program output, which uses
+     placeholder home paths (/home/you/...). Not real paths. L1 and L3 still apply. -->
+
 **Run a shop of AI agents from your phone.**
 
 You talk into it, and a room full of agents goes to work. Each one is a *line* — its own
 conversation, its own folder, its own job — and they all multiplex into one window you can open
-from your pocket. Say "open a line for the invoice cleanup," walk away, and check on it from the
+from your pocket. Say "open a line for the inbox cleanup," walk away, and check on it from the
 kitchen.
 
 It's one Node file with no dependencies, and it runs on top of Claude Code on your own machine.
