@@ -3,6 +3,9 @@
 <!-- publish-gate: prose-scan-exempt — documents literal program output, which uses
      placeholder home paths (/home/you/...). Not real paths. L1 and L3 still apply. -->
 
+> **No longer updated (November 2026).** This is a snapshot of the tool as my shop built it. The code
+> stays here, free under its license, but it won't be updated.
+
 **Run a shop of AI agents from your phone.**
 
 You talk into it, and a room full of agents goes to work. Each one is a *line* — its own
